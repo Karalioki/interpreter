@@ -30,6 +30,11 @@ class Interpreter():
             self.advance()
         
         return int(result)
+
+    def term(self):
+        token = self.current_token
+        self.eat(Type.INTEGER)
+        return token.value
     
     def get_next_token(self):
         
@@ -72,34 +77,23 @@ class Interpreter():
     def expr(self):
         self.current_token = self.get_next_token()
 
-        left = self.current_token
-        self.eat(Type.INTEGER)
-        
-        while self.current_char is not None:
-            op = self.current_token
-            self.eat(op.type)
-            
+        result = self.term()
+        while self.current_token.type in (Type.PLUS, Type.MINUS):
+            token = self.current_token
 
-            right = self.current_token
-            self.eat(Type.INTEGER)
-
-            if (op.type == Type.PLUS):
-                result = left.value + right.value
-            elif  op.type == Type.MINUS:
-                result = left.value - right.value
-            elif op.type == Type.MULT:
-                result = left.value * right.value
-            elif op.type == Type.DIV:
-                result = left.value / right.value
-            
-            left.value = result
+            if(token.type == Type.PLUS):
+                self.eat(Type.PLUS)
+                result = result + self.term()
+            elif token.type == Type.MINUS:
+                self.eat(Type.MINUS)
+                result = result - self.term()
         
-        return left.value
+        return result
     
 def main():
     while True:
         try:
-            text = input('> ')
+            text = input('>>> ')
             if(text == 'exit'):
                 break
         except EOFError:
