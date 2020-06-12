@@ -13,3 +13,7 @@ class Type(Enum):
 
     EOF = 6
 
+    STARTP = 7 #parentheses start
+
+    ENDP = 8 #parentheses end 
+

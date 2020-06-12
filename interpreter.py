@@ -27,9 +27,15 @@ class Interpreter():
         factor : INTEGER
         """
         token = self.current_token
-        self.eat(Type.INTEGER)
-        return token.value
-
+        if token.type == Type.INTEGER:
+            self.eat(Type.INTEGER)
+            return token.value
+        elif token.type == Type.STARTP:
+            self.eat(Type.STARTP)
+            result = self.expr()
+            self.eat(Type.ENDP)
+            return result
+    
     def term(self):
         ''' for multiplication and division'''
         result = self.factor()
@@ -41,7 +47,7 @@ class Interpreter():
                 result = result * self.factor()
             elif token.type == Type.DIV:
                 self.eat(Type.DIV)
-                result = result * self.factor()
+                result = result / self.factor()
             
         return result
             
@@ -65,7 +71,7 @@ class Interpreter():
 def main():
     while True:
         try:
-            text = input('>>> ')
+            text = input('>>>' )
             if(text == 'exit'):
                 break
         except EOFError:
