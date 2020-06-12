@@ -29,14 +29,11 @@ class Interpreter():
         token = self.current_token
         self.eat(Type.INTEGER)
         return token.value
-    
-    def expr(self):
-        """Arithmetic expression parser / interpreter.
 
-        expr   : factor ((MUL | DIV) factor)*
-        factor : INTEGER
-        """
+    def term(self):
+        ''' for multiplication and division'''
         result = self.factor()
+
         while self.current_token.type in (Type.MULT, Type.DIV):
             token = self.current_token
             if token.type == Type.MULT:
@@ -44,8 +41,25 @@ class Interpreter():
                 result = result * self.factor()
             elif token.type == Type.DIV:
                 self.eat(Type.DIV)
-                result = result / self.factor()
+                result = result * self.factor()
             
+        return result
+            
+    
+    def expr(self):
+        """
+        for addition and substraction
+        """
+        result = self.term()
+        while self.current_token.type in  (Type.PLUS, Type.MINUS):
+            token = self.current_token
+            if token.type == Type.PLUS:
+                self.eat(Type.PLUS)
+                result = result + self.term()
+            elif token.type == Type.MINUS:
+                self.eat(Type.MINUS)
+                result = result - self.term()
+        
         return result
 
 def main():
