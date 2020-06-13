@@ -1,78 +1,56 @@
 from type import Type
 from token import Token
 from lexer import Lexer
+from ast import AST, BinOp, Num, Parser
 
-class Interpreter():
 
-    def __init__(self, lexer):
-        self.lexer = lexer
-        self.current_token = self.lexer.get_next_token()
-
-    def error(self):
-        raise Exception('Invalid syntax')
-
-    def eat(self, type):
-        # compare the current token type with the passed token
-        # type and if they match then "eat" the current token
-        # and assign the next token to the self.current_token,
-        # otherwise raise an exception.
-        if(self.current_token.type == type):
-            self.current_token = self.lexer.get_next_token()
-        else:
-            self.error()
-    
-    def factor(self):
-        """Return an INTEGER token value.
-
-        factor : INTEGER
-        """
-        token = self.current_token
-        if token.type == Type.INTEGER:
-            self.eat(Type.INTEGER)
-            return token.value
-        elif token.type == Type.STARTP:
-            self.eat(Type.STARTP)
-            result = self.expr()
-            self.eat(Type.ENDP)
-            return result
-    
-    def term(self):
-        ''' for multiplication and division'''
-        result = self.factor()
-
-        while self.current_token.type in (Type.MULT, Type.DIV):
-            token = self.current_token
-            if token.type == Type.MULT:
-                self.eat(Type.MULT)
-                result = result * self.factor()
-            elif token.type == Type.DIV:
-                self.eat(Type.DIV)
-                result = result / self.factor()
-            
-        return result
-            
-    
-    def expr(self):
-        """
-        for addition and substraction
-        """
-        result = self.term()
-        while self.current_token.type in  (Type.PLUS, Type.MINUS):
-            token = self.current_token
-            if token.type == Type.PLUS:
-                self.eat(Type.PLUS)
-                result = result + self.term()
-            elif token.type == Type.MINUS:
-                self.eat(Type.MINUS)
-                result = result - self.term()
+class NodeVisitor():
+    def visit(self, node):
+        method_name = 'visit_' + type(node).__name__
         
-        return result
+        visitor = getattr(self, method_name, self.generic_visit)
+        return visitor(node)
+    
+    def generic_visit(self, node):
+        raise Exception("No visit_{} method".format(type(node).__name__))
+
+
+
+class Interpreter(NodeVisitor):
+    '''
+    Grammar
+
+        expr : term ((PLUS | MINUS) term) *
+        term : factor ((MULT | DIV) factor) *
+        factor : INTEGER | (STARTP expr ENDP)
+    '''
+    def __init__(self, parser):
+        self.parser = parser
+    
+    def visit_BinOp(self, node):
+        if node.op.type == Type.PLUS:
+            return self.visit(node.left) + self.visit(node.right)
+        elif node.op.type == Type.MINUS:
+            return self.visit(node.left) - self.visit(node.right)
+        elif node.op.type == Type.MULT:
+            return self.visit(node.left) * self.visit(node.right)
+        elif node.op.type == Type.DIV:
+            return self.visit(node.left) / self.visit(node.right)
+    
+    def visit_Num(self, node):
+        return node.value
+    
+    def interpret(self):
+        tree = self.parser.parse()
+        return self.visit(tree)
+    
+    
 
 def main():
     while True:
         try:
-            text = input('>>>' )
-            if(text == 'exit'):
+            text = input('>>> ' )
+            if(text.strip() == 'exit'):
                 break
         except EOFError:
             break
@@ -81,9 +59,11 @@ def main():
             continue
         
         lexer = Lexer(text)
-        interpreter = Interpreter(lexer)
-        result = interpreter.expr()
-        print(result)
+        parser = Parser(lexer)
+        interpreter = Interpreter(parser)
+        result = interpreter.interpret()
+
+        print('>>> ' + str(result))
 
 
 
